@@ -120,7 +120,6 @@
               //infowindow.setPosition(e.position);
               //infowindow.open(map,marker);
             });
-
         }
         this.setMap = function() {
           //map.set-map(this.map-input())
@@ -135,9 +134,9 @@
           console.log("in moveToLoc2 "+this.keyLocArray.length+","+JSON.stringify(this, null, 4) ); //+", "+this.keyLocArray()[1].name);
           for (var i=0; i<markers.length; i++) {
             if (this.keyLocArray()[i].visible() == false) {
-              markers[i].setMap(null);
+              markers[i].marker.setMap(null);
             }
-            markers[i].setAnimation(null);
+            markers[i].marker.setAnimation(null);
           }
         };
 
@@ -149,20 +148,23 @@
           console.log("in moveToLoc1 "+self.keyLocArray()[1].visible() );
           map.setCenter(new google.maps.LatLng(c.lat, c.lng));
           for (var i=0; i<markers.length; i++) {
-            markers[i].setMap(null);
+            markers[i].marker.setMap(null);
             console.log("i is "+i+", markers length is "+markers.length);
             if (self.keyLocArray()[i].visible() == true) {
               //console.log("marker true on "+this.keyLocArray()[i].name);
-              markers[i].setMap(map);
+              markers[i].marker.setMap(map);
             }
             else {
               //console.log("marker false on "+this.keyLocArray()[i].name);
 
             }
-            markers[i].setAnimation(null);
+            markers[i].marker.setAnimation(null);
           }
           //markers[c.j].setMap(map);
-          markers[c.j].setAnimation(google.maps.Animation.BOUNCE);
+          markers[c.j].marker.setAnimation(google.maps.Animation.BOUNCE);
+          markers[c.j].infowindow.open(markers[c.j].marker.get('map'), markers[c.j].marker);
+
+          console.log("marker bouncy, val of infowindow property: "+ markers[c.j].infowindow);
         };
 
         this.filterLocs = function() {
@@ -175,7 +177,7 @@
           if (markers.length > 0) {
             console.log("in filterLocs, markers.length is "+markers.length);
             for (var i = 0; i < markers.length; i++) {
-              markers[i].setMap(null);
+              markers[i].marker.setMap(null);
             }
             //markers.length = 0;
           }
@@ -187,7 +189,7 @@
               //console.log("yes1 "+this.keyLocArray()[i].name+","+this.keyLocArray()[i].visible()+"...");
               this.keyLocArray()[i].visible(true);
               //this.keyLocArray()[i].marker().setMap(map);
-              markers[i].setMap(map);
+              markers[i].marker.setMap(map);
               //console.log("yes2 "+this.keyLocArray()[i].name+","+this.keyLocArray()[i].visible());
             }
             else {
@@ -239,6 +241,7 @@
           //console.log("i="+i);
           addMarker(getGMLatLng(otherPlaces[i]), otherPlaces[i].name, i);
           //htmlKeyLocations += '<li>' + otherPlaces[i].name + '</li>';
+          //addListenerToMarker(markers[i]);
         }
 
 
@@ -262,6 +265,7 @@
           position: location,
           title: name
         });
+
         return marker;
       }
 
@@ -272,7 +276,17 @@
           title: name
         });
         //markers.push(marker); // *** change marker to obj for infowindow
-        markers[i] = marker;
+
+        var infowin = new google.maps.InfoWindow({
+          content: "info stuff for " + i + "here."
+        });
+
+        // Get contents for infowindow on "name"
+        markers[i] = { marker: marker, infowindow: infowin };
+
+        google.maps.event.addListener(markers[i].marker, 'click', function() {
+          infowin.open(markers[i].marker.get('map'), markers[i].marker);
+        });
       }
 
       function createMarker(placeObj){
