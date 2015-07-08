@@ -48,14 +48,14 @@
   <body>
     <div id="map-search">
       <input type="button" name="searchButton" value="Search" data-bind="click: setMap">
-      <input id="map-input" class="controls" type="text" placeholder="Enter a location" data-bind="textInput: mapInput, valueUpdate: 'keyup', event: {keyup: filterLocs, load: initMarkers} ">
+      <input id="map-input" class="controls" type="text" placeholder="Enter a location" data-bind="textInput: mapInput, valueUpdate: 'keyup', event: {keyup: filterLocs} ">
     </div>
 
     <div id="list-view">
         Key Locations
         (<span data-bind="text: mapInput"></span>)
         <ul id="list-view-ul" data-bind="foreach:keyLocArray">
-              <li data-bind="visible: $data.visible(), text: $data.name, click: $parent.moveToLoc"></li>
+              <li data-bind="visible: $data.visible(), text: $data.name + $index(), click: $parent.moveToLoc"></li>
         </ul>
     </div>
 
@@ -68,6 +68,7 @@
     //----------------- Model ------------//
       var map;
       var markers = [];
+      var infowindow = new google.maps.InfoWindow();
 
       var mainPlace = {          lat: 22.283, lng: 114.17, zoom: 12, name: "Hong Kong"      };
       //var place = {          lat: 51.5, lng: 0, zoom: 8, name: "London"      };
@@ -84,70 +85,121 @@
                         */
 
       var otherPlaces = [
-                          { name: "Victoria's Peak", lat: 22.275, lng: 114.147, visible: ko.observable(true), marker: ko.observable() },
-                          { name: "Hong Kong Disneyland", lat: 22.311, lng: 114.042, visible: ko.observable(true), marker: ko.observable() },
-                          { name: "McDonald's", lat: 22.281, lng: 114.177, visible: ko.observable(true), marker: ko.observable() },
-                          { name: "KFC", lat: 22.280, lng: 114.178, visible: ko.observable(true), marker: ko.observable() },
-                          { name: "Hong Kong International Airport", lat: 22.308, lng: 113.922, visible: ko.observable(true), marker: ko.observable() },
-                          { name: "International Finance Center", lat: 22.286, lng: 114.160, visible: ko.observable(true), marker: ko.observable() }
+                          { name: "Victoria's Peak", lat: 22.275, lng: 114.147 },
+                          { name: "Hong Kong Disneyland", lat: 22.311, lng: 114.042 },
+                          { name: "McDonald's", lat: 22.281, lng: 114.177 },
+                          { name: "KFC", lat: 22.280, lng: 114.178 },
+                          { name: "Hong Kong International Airport", lat: 22.308, lng: 113.922 },
+                          { name: "International Finance Center", lat: 22.286, lng: 114.160 }
                         ];
 
       var vm = function() {
+        var self = this;
+
         this.mapInput = ko.observable(); //mainPlace.name
         this.keyLocArray = ko.observableArray(otherPlaces);
         //this.markers = ko.observableArray([]);
 
+        var marker;
+        var content;
         for (var i = 0; i < otherPlaces.length; i++) {
+          console.log("getMarker i is "+i+", markers.length is "+markers.length);
           //addMarker(getGMLatLng(this.keyLocArray[i]), this.keyLocArray()[i].name);
-          this.keyLocArray()[i].marker( getMarker(getGMLatLng(this.keyLocArray()[i]), this.keyLocArray()[i].name) );
+          markers[i] = null;
+          marker = getMarker(getGMLatLng(this.keyLocArray()[i]), this.keyLocArray()[i].name);
+          markers[i] = marker;
+          this.keyLocArray()[i].j = i;
+          this.keyLocArray()[i].visible = ko.observable(true);
+          this.keyLocArray()[i].marker = ko.observable( marker );
+          //this.keyLocArray()[i].marker( marker );
          // htmlKeyLocations += '<li>' + otherPlaces[i].name + '</li>';
           //console.log("i="+i+this.keyLocArray()[i].marker());
+            google.maps.event.addListener(marker, 'click', function(e) {
+              //content = "hey " + e.position;
+              //infowindow.setContent(content);
+              //infowindow.setPosition(e.position);
+              //infowindow.open(map,marker);
+            });
+
         }
-                this.setMap = function() {
+        this.setMap = function() {
           //map.set-map(this.map-input())
           if (this.mapInput()) {
             console.log("setMap to "+this.mapInput());
           }
         };
 
+        this.moveToLoc2 = function() {
+          //move map to center on clicked key loc
+          var self = this;
+          console.log("in moveToLoc2 "+this.keyLocArray.length+","+JSON.stringify(this, null, 4) ); //+", "+this.keyLocArray()[1].name);
+          for (var i=0; i<markers.length; i++) {
+            if (this.keyLocArray()[i].visible() == false) {
+              markers[i].setMap(null);
+            }
+            markers[i].setAnimation(null);
+          }
+        };
+
         this.moveToLoc = function(c) {
           //move map to center on clicked key loc
-          console.log("center map to key loc "+c.name);
-          //this.mapInput(ind);
+
+          //console.log("center map to key loc "+c.name+", "+keyLocArray()[i]);
+          //this.mapInput( c.name );
+          console.log("in moveToLoc1 "+self.keyLocArray()[1].visible() );
+          map.setCenter(new google.maps.LatLng(c.lat, c.lng));
+          for (var i=0; i<markers.length; i++) {
+            markers[i].setMap(null);
+            console.log("i is "+i+", markers length is "+markers.length);
+            if (self.keyLocArray()[i].visible() == true) {
+              //console.log("marker true on "+this.keyLocArray()[i].name);
+              markers[i].setMap(map);
+            }
+            else {
+              //console.log("marker false on "+this.keyLocArray()[i].name);
+
+            }
+            markers[i].setAnimation(null);
+          }
+          //markers[c.j].setMap(map);
+          markers[c.j].setAnimation(google.maps.Animation.BOUNCE);
         };
 
         this.filterLocs = function() {
-          var self = this;
+          //var self = this;
           // Go thru OtherPlaces array, see if c.value string is in OtherPlaces array
-          console.log("in filterLocs: value is: "+self.mapInput()+"");
+          //console.log("in filterLocs: value is: "+self.mapInput()+"");
+
 
           // Remove initial markers on map
           if (markers.length > 0) {
+            console.log("in filterLocs, markers.length is "+markers.length);
             for (var i = 0; i < markers.length; i++) {
               markers[i].setMap(null);
             }
-            markers.length = 0;
+            //markers.length = 0;
           }
 
+
           for (var i=0; i<this.keyLocArray().length; i++) {
+            //this.keyLocArray()[i].marker().setMap(null);
             if (this.keyLocArray()[i].name.toUpperCase().indexOf(self.mapInput().toUpperCase())>=0) {
               //console.log("yes1 "+this.keyLocArray()[i].name+","+this.keyLocArray()[i].visible()+"...");
               this.keyLocArray()[i].visible(true);
-              this.keyLocArray()[i].marker().setMap(map);
+              //this.keyLocArray()[i].marker().setMap(map);
+              markers[i].setMap(map);
               //console.log("yes2 "+this.keyLocArray()[i].name+","+this.keyLocArray()[i].visible());
             }
             else {
               //console.log("no1 "+this.keyLocArray()[i].name+","+this.keyLocArray()[i].visible()+"...");
               this.keyLocArray()[i].visible(false);
-              this.keyLocArray()[i].marker().setMap(null);
+
               //console.log("no2 "+this.keyLocArray()[i].name+","+this.keyLocArray()[i].visible());
             }
           }
         };
 
-        this.initMarkers = function (v) {
-          console.log("yes");
-        };
+
       };
 
       ko.applyBindings(new vm());
@@ -173,19 +225,19 @@
         var input = /** @type {HTMLInputElement} */(
           document.getElementById('map-input'));
 
-          var autocomplete = new google.maps.places.Autocomplete(input);
-            autocomplete.bindTo('bounds', map);
-
-          var infowindow = new google.maps.InfoWindow();
+          //var autocomplete = new google.maps.places.Autocomplete(input);
+          //  autocomplete.bindTo('bounds', map);
 
 
         var htmlKeyLocations = "";
         // addMarker(mainPlace, mainPlace.name); // No marker for default place
 
+        console.log("in before end of init, markers.length is "+markers.length);
+
         // Initial markers on map
         for (var i = 0; i < otherPlaces.length; i++) {
           //console.log("i="+i);
-          addMarker(getGMLatLng(otherPlaces[i]), otherPlaces[i].name);
+          addMarker(getGMLatLng(otherPlaces[i]), otherPlaces[i].name, i);
           //htmlKeyLocations += '<li>' + otherPlaces[i].name + '</li>';
         }
 
@@ -194,7 +246,7 @@
         var keyloc = document.getElementById("list-view-ul");
         keyloc.innerHTML = htmlKeyLocations;
         ***/
-
+        console.log("in end of init, markers.length is "+markers.length);
       }
       google.maps.event.addDomListener(window, 'load', initialize);
 
@@ -213,18 +265,24 @@
         return marker;
       }
 
-      function addMarker(location, name) {
+      function addMarker(location, name, i) {
         var marker = new google.maps.Marker({
           position: location,
           map: map,
           title: name
         });
-        markers.push(marker);
+        //markers.push(marker); // *** change marker to obj for infowindow
+        markers[i] = marker;
       }
 
       function createMarker(placeObj){
         console.log("Create marker for "+placeObj);
       };
+
+      // Debug function to return contents of an object as JSON data
+      function showObj(obj) {
+        return JSON.stringify(obj, null, 4)
+      }
 
 
     //----------------- View ------------//
