@@ -61,6 +61,7 @@
 
     <div id="map-canvas"></div>
 
+    <script type="text/javascript" src="js/lib/jquery.min.js"></script>
     <script type="text/javascript" src="js/lib/knockout-3.3.0.js"></script>
     <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBZnrZl2ZiBy4Vn6_A_dcSohGg9j6nMGBE"></script>
     <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=places"></script>
@@ -146,6 +147,10 @@
           //console.log("center map to key loc "+c.name+", "+keyLocArray()[i]);
           //this.mapInput( c.name );
           console.log("in moveToLoc1 "+self.keyLocArray()[1].visible() );
+
+          // Put below in function to share with marker listener
+          clickedOnMarker(c, self);
+          /**
           map.setCenter(new google.maps.LatLng(c.lat, c.lng));
           for (var i=0; i<markers.length; i++) {
             markers[i].marker.setMap(null);
@@ -163,8 +168,10 @@
           //markers[c.j].setMap(map);
           markers[c.j].marker.setAnimation(google.maps.Animation.BOUNCE);
           markers[c.j].infowindow.open(markers[c.j].marker.get('map'), markers[c.j].marker);
+          **/
+          // End of Put below...
 
-          console.log("marker bouncy, val of infowindow property: "+ markers[c.j].infowindow);
+          //console.log("marker bouncy, val of infowindow property: "+ markers[c.j].infowindow);
         };
 
         this.filterLocs = function() {
@@ -286,6 +293,10 @@
 
         google.maps.event.addListener(markers[i].marker, 'click', function() {
           infowin.open(markers[i].marker.get('map'), markers[i].marker);
+          //*** to center map also
+          //map.setCenter(new google.maps.LatLng(otherPlaces[i].lat, otherPlaces[i].lng));
+          clickedOnMarker(otherPlaces[i]);
+          //console.log("what is this:" + showObj( ) );
         });
       }
 
@@ -296,6 +307,31 @@
       // Debug function to return contents of an object as JSON data
       function showObj(obj) {
         return JSON.stringify(obj, null, 4)
+      }
+
+      function clickedOnMarker(c) {
+          // Put below in function to share with marker listener
+
+          map.setCenter(new google.maps.LatLng(c.lat, c.lng));
+          for (var i=0; i<markers.length; i++) {
+            markers[i].marker.setMap(null);
+            //console.log("i is "+i+", markers length is "+markers.length);
+            //console.log("in clickedOnMarker, i:"+i+", otherPlaces.visible: "+otherPlaces[i].visible());
+            if (otherPlaces[i].visible() == true) {
+              //console.log("marker true on "+this.keyLocArray()[i].name);
+              markers[i].marker.setMap(map);
+            }
+            else {
+              //console.log("marker false on "+this.keyLocArray()[i].name);
+
+            }
+            markers[i].marker.setAnimation(null);
+          }
+          //markers[c.j].setMap(map);
+          markers[c.j].marker.setAnimation(google.maps.Animation.BOUNCE);
+          markers[c.j].infowindow.open(markers[c.j].marker.get('map'), markers[c.j].marker);
+          // End of Put below...
+
       }
 
 
