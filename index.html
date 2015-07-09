@@ -61,10 +61,12 @@
 
     <div id="map-canvas"></div>
 
+
     <script type="text/javascript" src="js/lib/jquery.min.js"></script>
     <script type="text/javascript" src="js/lib/knockout-3.3.0.js"></script>
     <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBZnrZl2ZiBy4Vn6_A_dcSohGg9j6nMGBE"></script>
     <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=places"></script>
+    <script type="text/javascript" src="js/lib/oauth-signature.js"></script>
     <script type="text/javascript">
     //----------------- Model ------------//
       var map;
@@ -86,13 +88,18 @@
                         */
 
       var otherPlaces = [
-                          { name: "Victoria's Peak", lat: 22.275, lng: 114.147 },
+                          { name: "Victoria's Peak", lat: 22.275, lng: 114.147, term: "Victoria's Peak Hong Kong" },
                           { name: "Hong Kong Disneyland", lat: 22.311, lng: 114.042 },
-                          { name: "McDonald's", lat: 22.281, lng: 114.177 },
-                          { name: "KFC", lat: 22.280, lng: 114.178 },
+                          { name: "McDonald's", lat: 22.281, lng: 114.177, term: "Hong Kong McDonald's" },
+                          { name: "KFC", lat: 22.280, lng: 114.178, term: "Hong Kong KFC" },
                           { name: "Hong Kong International Airport", lat: 22.308, lng: 113.922 },
-                          { name: "International Finance Center", lat: 22.286, lng: 114.160 }
+                          { name: "International Finance Center", lat: 22.286, lng: 114.160, term: "International Finance Center Hong Kong" }
                         ];
+
+
+      var wikiUrl = 'http://en.wikipedia.org/w/api.php?action=opensearch&search=SEARCHTARGET&format=json&callback=wikiCallback';
+      var nytimesUrl = 'http://api.nytimes.com/svc/search/v2/articlesearch.json?q=SEARCHTARGET&sort=newest&api-key=5523c9884485f5cd674bde70c977397a:10:72302772';
+
 
       var vm = function() {
         var self = this;
@@ -256,7 +263,8 @@
         var keyloc = document.getElementById("list-view-ul");
         keyloc.innerHTML = htmlKeyLocations;
         ***/
-        console.log("in end of init, markers.length is "+markers.length);
+        //console.log("in end of init, markers.length is "+markers.length);
+
       }
       google.maps.event.addDomListener(window, 'load', initialize);
 
@@ -284,15 +292,43 @@
         });
         //markers.push(marker); // *** change marker to obj for infowindow
 
+        //var welem = document.createElement("div");
+        //welem.setAttribute("id", "wikipedia-links"+i);
+        //welem.appendChild(document.createTextNode("Loading Wikipedia Links..."));
         var infowin = new google.maps.InfoWindow({
-          content: "info stuff for " + i + "here."
+        //infowin = new google.maps.InfoWindow({
+          content: '<b>' + otherPlaces[i].name + '</b>'
         });
+
+        //otherPlaces[i].wikiElem = $("#wikipedia-links"+i);
+
+        //console.log("check jquery dom:" + $("#wikipedia-linksx0") );
+
+        // Retrieve Wikipedia Info for InfoWindow
+        otherPlaces[i].wikiRequestTimeout = setTimeout(function(){
+            //otherPlaces[i].$wikiElem.text("failed to get Wikipedia resources for "+otherPlaces[i].name);
+            infowin.setContent(infowin.getContent() + "<br>Failed to get Wikipedia resources for "+otherPlaces[i].name);
+        }, 8000);
+
+        if (!otherPlaces[i].term) {
+          otherPlaces[i].term = otherPlaces[i].name;
+        }
+        console.log("search term is: "+ otherPlaces[i].term);
+        var wikiLoc = wikiUrl;
+        wikiLoc = wikiLoc.replace("SEARCHTARGET", otherPlaces[i].term);
+        addWikiInfo(wikiLoc, otherPlaces[i].wikiRequestTimeout, infowin);
+
+        // Retrieve NY Times Info for InfoWindow
+        var nytimesLoc = nytimesUrl;
+        nytimesLoc = nytimesLoc.replace("SEARCHTARGET", otherPlaces[i].term);
+        addNYTimesInfo(nytimesLoc, otherPlaces[i], infowin);
+
 
         // Get contents for infowindow on "name"
         markers[i] = { marker: marker, infowindow: infowin };
 
         google.maps.event.addListener(markers[i].marker, 'click', function() {
-          infowin.open(markers[i].marker.get('map'), markers[i].marker);
+          // dupe? infowin.open(markers[i].marker.get('map'), markers[i].marker);
           //*** to center map also
           //map.setCenter(new google.maps.LatLng(otherPlaces[i].lat, otherPlaces[i].lng));
           clickedOnMarker(otherPlaces[i]);
@@ -334,9 +370,74 @@
 
       }
 
+      function addWikiInfo(wikiUrl, wikiRequestTimeout, infowin) {
+        var output = "";
+        //console.log("elem is "+showObj(elem));
+        //infowin.setContent("hey");
+        $.ajax({
+            url: wikiUrl,
+            dataType: "jsonp",
+            // jsonp: "callback",
+            success: function( response ) {
+                var articleList = response[1];
 
+                //elem.text("");
+                for (var i = 0; i < articleList.length; i++) {
+                    articleStr = articleList[i];
+                    var url = 'http://en.wikipedia.org/wiki/' + articleStr;
+                    //$wikiElem.append('<li><a href="' + url + '">' + articleStr + '</a></li>');
+                    output += '<li><a href="' + url + '">' + articleStr + '</a></li>';
+                    //elem.append('<li><a href="' + url + '">' + articleStr + '</a></li>');
+                };
+                clearTimeout(wikiRequestTimeout);
+                if (!output) {
+                  output = "<br>(No Wikipedia articles found)";
+                }
+                else {
+                  output = "<br>Wikipedia Links:<br>" + output;
+                }
+                infowin.setContent(infowin.getContent() + output);
+                //placeObj.wiki = output;
+                //console.log("ajax output is "+output);
+            }
+        });
+
+      }
+
+//        addNYTimesInfo(nytimesLoc, otherPlaces[i], infowin);
+      function addNYTimesInfo(nytimesLoc, placeObj, infowin) {
+        var output = "";
+
+        $.getJSON(nytimesLoc, function(data){
+
+            //$nytHeaderElem.text('New York Times Articles About ' + cityStr);
+
+            articles = data.response.docs;
+
+            for (var i = 0; i < articles.length; i++) {
+                var article = articles[i];
+                //$nytElem.append
+                output += '<li class="article">'+
+                    '<a href="'+article.web_url+'">'+article.headline.main+'</a>'+
+                    '<p>' + article.snippet + '</p>'+
+                '</li>';
+            };
+            if (!output) {
+              output = "(No NY Times articles found)";
+            }
+            infowin.setContent(infowin.getContent() + output);
+            //placeObj.nytimes = output;
+
+        }).error(function(e){
+            //$nytHeaderElem.text
+            output += 'New York Times Articles Could Not Be Loaded';
+            infowin.setContent(infowin.getContent() + output);
+            //placeObj.nytimes = output;
+        });
+      }
     //----------------- View ------------//
 
+    console.log("Timestamp: "+Date.now());
     </script>
 
   </body>
