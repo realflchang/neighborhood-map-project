@@ -2,11 +2,14 @@
 <html>
   <head>
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="css/lib/bootstrap.min.css">
 
     <style type="text/css">
-      html, body { height: 100%; width:100%; margin: 0; xxpadding-right: 20px; }
-      #map-canvas { height: 90%; width:85%; marginxx: 20px 0 0 100px; } /* mobile: width: 100%, others: width: 85%*/
-      #map-search { positionxx:absolute; width:100%; top:0; left:0; z-indexxx:+2; heightxx:1.5em; background: #A0A0A0;}
+      html, body { height: 100%; width: 100%; margin: 0; xxpadding-right: 20px; }
+      #container { width: 100%; }
+      .map-canvas-container { height: 500px; widthxx: 85%; padding: 0; backgroundxx: yellow;}
+      #map-canvas { height: 90%; width:100%; marginxx: 20px 0 0 100px; } /* mobile: width: 100%, others: width: 85%*/
+      #map-search { positionxx:absolute; widthxx:100%; top:0; left:0; z-indexxx:+2; heightxx:1.5em; background: #A0A0A0;}
       #map-input {
         background-color: #fff;
         font-family: Roboto;
@@ -20,8 +23,9 @@
       }
       #list-view {
         background: #909090;
-        max-width: 100px;
-        min-width: 100px;
+        max-widthxx: 100px;
+        widthxx: 100%;
+        min-widthxx: 150px;
         float: left;
         padding-top: 10px;
         padding-left: 0px;
@@ -30,6 +34,7 @@
         list-style-type: none;
         padding-left: 0;
         padding-right: 0px;
+        width: 100%;
       }
       #list-view li {
         height: auto;
@@ -43,36 +48,49 @@
         background: #E0E000;
       }
 
+      .nytimesajax, .wikiajax {
+        widthxx: 25%;
+        backgroundxx: #A0A000;
+        border-radius: 5px;
+        border: 1px solid #A0A0A0;
+        padding: 5px;
+      }
+
     </style>
   </head>
   <body>
-    <div id="map-search">
-      <input type="button" name="searchButton" value="Search" data-bind="click: setMap">
-      <input id="map-input" class="controls" type="text" placeholder="Enter a location" data-bind="textInput: mapInput, valueUpdate: 'keyup', event: {keyup: filterLocs} ">
-    </div>
 
-    <div id="list-view">
-        Key Locations
-        (<span data-bind="text: mapInput"></span>)
-        <ul id="list-view-ul" data-bind="foreach:keyLocArray">
-              <li data-bind="visible: $data.visible(), text: $data.name + $index(), click: $parent.moveToLoc"></li>
-        </ul>
-    </div>
+    <div class="container"><!--Container-->
 
-    <div id="map-canvas"></div>
+      <div id="map-search" class="row">
+        <div class="col-md-12">
+          <label name="search" value="Search">Search:</label>
+          <input id="map-input" class="controls" type="text" placeholder="Enter a location" data-bind="textInput: mapInput, valueUpdate: 'keyup', event: {keyup: filterLocs} ">
+        </div>
+      </div>
 
+      <div class="row">
+        <div id="list-view" class="col-xs-12 col-sm-12 col-md-3">
+            Key Locations
+            <ul id="list-view-ul" data-bind="foreach:keyLocArray">
+                  <li data-bind="visible: $data.visible(), text: $data.name, click: $parent.moveToLoc"></li>
+            </ul>
+        </div>
+
+        <div class="map-canvas-container col-xs-12 col-sm-12 col-md-9">
+          <div id="map-canvas"></div>
+        </div>
+
+      </div>
+
+    </div><!--End container-->
 
     <script type="text/javascript" src="js/lib/jquery.min.js"></script>
     <script type="text/javascript" src="js/lib/knockout-3.3.0.js"></script>
     <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBZnrZl2ZiBy4Vn6_A_dcSohGg9j6nMGBE"></script>
     <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=places"></script>
-    <script type="text/javascript" src="js/lib/oauth-signature.js"></script>
     <script type="text/javascript">
     //----------------- Model ------------//
-      var map;
-      var markers = [];
-      var infowindow = new google.maps.InfoWindow();
-
       var mainPlace = {          lat: 22.283, lng: 114.17, zoom: 12, name: "Hong Kong"      };
       //var place = {          lat: 51.5, lng: 0, zoom: 8, name: "London"      };
       //var place = {          lat: -34.397, lng: 150.644, name: "Sydney"      };
@@ -97,9 +115,14 @@
                         ];
 
 
-      var wikiUrl = 'http://en.wikipedia.org/w/api.php?action=opensearch&search=SEARCHTARGET&format=json&callback=wikiCallback';
-      var nytimesUrl = 'http://api.nytimes.com/svc/search/v2/articlesearch.json?q=SEARCHTARGET&sort=newest&api-key=5523c9884485f5cd674bde70c977397a:10:72302772';
+      var wikiUrl = 'http://en.xxwikipedia.org/w/api.php?action=opensearch&search=SEARCHTERM&format=json&callback=wikiCallback';
+      var nytimesUrl = 'http://api.xxnytimes.com/svc/search/v2/articlesearch.json?q=SEARCHTERM&sort=newest&api-key=5523c9884485f5cd674bde70c977397a:10:72302772';
 
+    //----------------- View Model ------------//
+
+      var map;
+      var markers = [];
+      var infowindow = new google.maps.InfoWindow();
 
       var vm = function() {
         var self = this;
@@ -111,7 +134,7 @@
         var marker;
         var content;
         for (var i = 0; i < otherPlaces.length; i++) {
-          console.log("getMarker i is "+i+", markers.length is "+markers.length);
+          //console.log("getMarker i is "+i+", markers.length is "+markers.length);
           //addMarker(getGMLatLng(this.keyLocArray[i]), this.keyLocArray()[i].name);
           markers[i] = null;
           marker = getMarker(getGMLatLng(this.keyLocArray()[i]), this.keyLocArray()[i].name);
@@ -129,6 +152,7 @@
               //infowindow.open(map,marker);
             });
         }
+        /**
         this.setMap = function() {
           //map.set-map(this.map-input())
           if (this.mapInput()) {
@@ -147,6 +171,7 @@
             markers[i].marker.setAnimation(null);
           }
         };
+        **/
 
         this.moveToLoc = function(c) {
           //move map to center on clicked key loc
@@ -221,12 +246,13 @@
       ko.applyBindings(new vm());
 
 
-    //----------------- View Model ------------//
       function initialize() {
         var mapOptions = {
           center: mainPlace,
           zoom: mainPlace.zoom
         };
+        console.log(document.getElementById('map-canvas'));
+
         map = new google.maps.Map(document.getElementById('map-canvas'),
             mapOptions);
 
@@ -248,7 +274,7 @@
         var htmlKeyLocations = "";
         // addMarker(mainPlace, mainPlace.name); // No marker for default place
 
-        console.log("in before end of init, markers.length is "+markers.length);
+        //console.log("in before end of init, markers.length is "+markers.length);
 
         // Initial markers on map
         for (var i = 0; i < otherPlaces.length; i++) {
@@ -297,7 +323,8 @@
         //welem.appendChild(document.createTextNode("Loading Wikipedia Links..."));
         var infowin = new google.maps.InfoWindow({
         //infowin = new google.maps.InfoWindow({
-          content: '<b>' + otherPlaces[i].name + '</b>'
+          content: '<b>' + otherPlaces[i].name + '</b>',
+          maxWidth: 300
         });
 
         //otherPlaces[i].wikiElem = $("#wikipedia-links"+i);
@@ -307,7 +334,7 @@
         // Retrieve Wikipedia Info for InfoWindow
         otherPlaces[i].wikiRequestTimeout = setTimeout(function(){
             //otherPlaces[i].$wikiElem.text("failed to get Wikipedia resources for "+otherPlaces[i].name);
-            infowin.setContent(infowin.getContent() + "<br>Failed to get Wikipedia resources for "+otherPlaces[i].name);
+            infowin.setContent(infowin.getContent() + '<br><div class="wikiajax">Failed to get Wikipedia resources for '+otherPlaces[i].name+'</div>');
         }, 8000);
 
         if (!otherPlaces[i].term) {
@@ -315,16 +342,16 @@
         }
         console.log("search term is: "+ otherPlaces[i].term);
         var wikiLoc = wikiUrl;
-        wikiLoc = wikiLoc.replace("SEARCHTARGET", otherPlaces[i].term);
+        wikiLoc = wikiLoc.replace("SEARCHTERM", otherPlaces[i].term);
         addWikiInfo(wikiLoc, otherPlaces[i].wikiRequestTimeout, infowin);
 
         // Retrieve NY Times Info for InfoWindow
         var nytimesLoc = nytimesUrl;
-        nytimesLoc = nytimesLoc.replace("SEARCHTARGET", otherPlaces[i].term);
+        nytimesLoc = nytimesLoc.replace("SEARCHTERM", otherPlaces[i].term);
         addNYTimesInfo(nytimesLoc, otherPlaces[i], infowin);
 
 
-        // Get contents for infowindow on "name"
+        // Associate infowindows with markers
         markers[i] = { marker: marker, infowindow: infowin };
 
         google.maps.event.addListener(markers[i].marker, 'click', function() {
@@ -336,9 +363,11 @@
         });
       }
 
+      /**
       function createMarker(placeObj){
         console.log("Create marker for "+placeObj);
       };
+      **/
 
       // Debug function to return contents of an object as JSON data
       function showObj(obj) {
@@ -386,7 +415,7 @@
                     articleStr = articleList[i];
                     var url = 'http://en.wikipedia.org/wiki/' + articleStr;
                     //$wikiElem.append('<li><a href="' + url + '">' + articleStr + '</a></li>');
-                    output += '<li><a href="' + url + '">' + articleStr + '</a></li>';
+                    output += '<li><a href="' + url + '" target="info">' + articleStr + '</a></li>';
                     //elem.append('<li><a href="' + url + '">' + articleStr + '</a></li>');
                 };
                 clearTimeout(wikiRequestTimeout);
@@ -396,7 +425,7 @@
                 else {
                   output = "<br>Wikipedia Links:<br>" + output;
                 }
-                infowin.setContent(infowin.getContent() + output);
+                infowin.setContent(infowin.getContent() + '<div class="wikiajax">' + output + '</div>');
                 //placeObj.wiki = output;
                 //console.log("ajax output is "+output);
             }
@@ -418,26 +447,29 @@
                 var article = articles[i];
                 //$nytElem.append
                 output += '<li class="article">'+
-                    '<a href="'+article.web_url+'">'+article.headline.main+'</a>'+
+                    '<a href="'+article.web_url+'" target="info">'+article.headline.main+'</a>'+
                     '<p>' + article.snippet + '</p>'+
                 '</li>';
             };
             if (!output) {
-              output = "(No NY Times articles found)";
+              output = "<br>(No NY Times articles found)";
             }
-            infowin.setContent(infowin.getContent() + output);
+            else {
+              output = "<br>NY Times Related Articles:<br>" + output;
+            }
+            infowin.setContent(infowin.getContent() + '<div class="nytimesajax">' + output + '</div>');
             //placeObj.nytimes = output;
 
         }).error(function(e){
             //$nytHeaderElem.text
             output += 'New York Times Articles Could Not Be Loaded';
-            infowin.setContent(infowin.getContent() + output);
+            infowin.setContent(infowin.getContent() + '<div class="nytimesajax">' + output + '</div>');
             //placeObj.nytimes = output;
         });
       }
     //----------------- View ------------//
 
-    console.log("Timestamp: "+Date.now());
+    //console.log("Timestamp: "+Date.now());
     </script>
 
   </body>
