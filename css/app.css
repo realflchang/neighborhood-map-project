@@ -1,10 +1,11 @@
-      html, body {
+      html,
+      body {
         height: 100%;
         width: 100%;
         margin: 0;
       }
 
-      #container {
+      .container {
         width: 100%;
       }
 
@@ -13,43 +14,41 @@
         padding: 0;
       }
 
-      #map-canvas {
+      .map-canvas {
         height: 90%;
-        width:100%;
+        width: 100%;
       }
 
-      #map-search {
-        top:0;
-        left:0;
-        background: #A0A0A0;
+      .map-search {
+        top: 0;
+        left: 0;
+        background: #a0a0a0;
       }
 
-      #map-input {
+      .map-input {
         background-color: #fff;
-        font-family: Roboto;
-        font-size: 15px;
-        font-weight: 300;
+        font: 300 15px Roboto;
         margin-left: 12px;
         padding: 0 11px 0 13px;
         text-overflow: ellipsis;
         width: 85%;
       }
 
-      #list-view {
+      .list-view {
         background: #909090;
         float: left;
         padding-top: 10px;
         padding-left: 20px;
       }
 
-      #list-view ul {
+      .list-view ul {
         list-style-type: none;
         padding-left: 0;
         padding-right: 10px;
         width: 100%;
       }
 
-      #list-view li {
+      .list-view li {
         height: auto;
         min-height: 30px;
         border-top: 1px solid #666;
@@ -57,12 +56,13 @@
         padding: 0 10px;
       }
 
-      #list-view li:hover {
+      .list-view li:hover {
         cursor: pointer;
         background: #E0E000;
       }
 
-      .nytimesajax, .wikiajax {
+      .nytimesajax,
+      .wikiajax {
         border-radius: 5px;
         border: 1px solid #A0A0A0;
         padding: 5px;

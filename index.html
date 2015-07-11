@@ -11,23 +11,23 @@
 
     <div class="container">
 
-      <div id="map-search" class="row">
+      <div class="row map-search">
         <div class="col-md-12">
           <label name="search" value="Search">Search:</label>
-          <input id="map-input" class="controls" type="text" placeholder="Enter a location" data-bind="textInput: mapInput, valueUpdate: 'keyup', event: {keyup: filterLocs} ">
+          <input class="map-input" type="text" placeholder="Enter a location" data-bind="textInput: mapInput, valueUpdate: 'keyup', event: {keyup: filterLocs} ">
         </div>
       </div>
 
       <div class="row">
-        <div id="list-view" class="col-xs-12 col-sm-12 col-md-3">
+        <div class="list-view col-xs-12 col-md-3">
             Key Locations
-            <ul id="list-view-ul" data-bind="foreach:keyLocArray">
+            <ul data-bind="foreach:keyLocArray">
                   <li data-bind="visible: $data.visible(), text: $data.name, click: $parent.moveToLoc"></li>
             </ul>
         </div>
 
-        <div class="map-canvas-container col-xs-12 col-sm-12 col-md-9">
-          <div id="map-canvas"></div>
+        <div class="map-canvas-container col-xs-12 col-md-9">
+          <div id="map-canvas" class="map-canvas"></div>
         </div>
 
       </div>
@@ -36,8 +36,7 @@
 
     <script type="text/javascript" src="js/lib/jquery.min.js"></script>
     <script type="text/javascript" src="js/lib/knockout-3.3.0.js"></script>
-    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBZnrZl2ZiBy4Vn6_A_dcSohGg9j6nMGBE"></script>
-    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=places"></script>
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBZnrZl2ZiBy4Vn6_A_dcSohGg9j6nMGBE&libraries=places"></script>
     <script type="text/javascript" src="js/model.js"></script>
     <script type="text/javascript" src="js/viewmodel.js"></script>
 
