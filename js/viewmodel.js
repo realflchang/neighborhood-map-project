@@ -64,6 +64,9 @@
         for (var i = 0; i < otherPlaces.length; i++) {
           addMarker(otherPlaces[i], i);
         }
+
+        // Initialize our infoWindow
+        infowin = new google.maps.InfoWindow();
       }
       google.maps.event.addDomListener(window, 'load', initialize);
 
@@ -100,29 +103,19 @@
           title: name
         });
 
-        // Create basic infowindow for this marker
-        var infowin = new google.maps.InfoWindow({
-          content: '<b>' + otherPlaces[i].name + '</b>' + '<br><div class="wikiajax">' + wikiPlaceholder + '</div><br><div class="nytimesajax">' + nytimesPlaceholder + '</div>',
-          maxWidth: 300
-        });
+        // Create basic infowindow content for this marker
+        placeObj.infowin = '<b>' + otherPlaces[i].name + '</b>' + '<br><div class="wikiajax">' + wikiPlaceholder + '</div><br><div class="nytimesajax">' + nytimesPlaceholder + '</div>';
 
         // Set time limit to get info from Wiki API
         otherPlaces[i].wikiRequestTimeout = setTimeout(function(){
-          infowin.setContent(
-            infowin.getContent().replace(
-              wikiPlaceholder, 'Sorry, could not get Wikipedia resources for '+otherPlaces[i].name
-            )
-          );
+          placeObj.infowin = placeObj.infowin.replace(wikiPlaceholder, 'Sorry, could not get Wikipedia resources for '+otherPlaces[i].name);
         }, 8000);
 
         // Set time limit to get info from NY Times API
         otherPlaces[i].nytimesRequestTimeout = setTimeout(function(){
-          infowin.setContent(
-            infowin.getContent().replace(
-              nytimesPlaceholder, 'Sorry, could not get NY Times articles for '+otherPlaces[i].name
-            )
-          );
+          placeObj.infowin = placeObj.infowin.replace(nytimesPlaceholder, 'Sorry, could not get NY Times articles for '+otherPlaces[i].name);
         }, 8000);
+
 
         // Validate search term. If place object has no term property, use the name
         if (!otherPlaces[i].term) {
@@ -139,8 +132,8 @@
         nytimesLoc = nytimesLoc.replace("SEARCHTERM", otherPlaces[i].term);
         addNYTimesInfo(nytimesLoc, otherPlaces[i], infowin);
 
-        // Associate infowindows with markers
-        markers[i] = { marker: marker, infowindow: infowin };
+        // Add marker to markers array. Allows for optional revisions to markers object array
+        markers[i] = { marker: marker };
 
         // Enable click event to marker
         google.maps.event.addListener(markers[i].marker, 'click', function() {
@@ -161,7 +154,8 @@
           markers[i].marker.setAnimation(null);
         }
         markers[placeObj.j].marker.setAnimation(google.maps.Animation.BOUNCE);
-        markers[placeObj.j].infowindow.open(map, markers[placeObj.j].marker);
+        infowin.setContent("some stuff here for "+placeObj.infowin);
+        infowin.open(map, markers[placeObj.j].marker);
       }
 
       // Wiki Ajax function. Runs ajax query, and populate infowindow when there is new data
@@ -186,11 +180,11 @@
               else {
                 output = "Wikipedia Links:<br>" + output;
               }
-              infowin.setContent(infowin.getContent().replace(wikiPlaceholder, output)); // Replace placeholder with Wiki results
+              placeObj.infowin = placeObj.infowin.replace(wikiPlaceholder, output); // Replace placeholder with Wiki results
             },
             error: function( response, textstatus, errorthrown ) {
               output = "There is an error retrieving Wiki: " + textstatus + ".";
-              infowin.setContent(infowin.getContent().replace(wikiPlaceholder, output)); // Replace placeholder with Wiki results
+              placeObj.infowin = placeObj.infowin.replace(wikiPlaceholder, output); // Replace placeholder with Wiki results
             }
         });
 
@@ -216,12 +210,12 @@
             else {
               output = "NY Times Related Articles:<br>" + output;
             }
-            infowin.setContent(infowin.getContent().replace(nytimesPlaceholder, output));
+            placeObj.infowin = placeObj.infowin.replace(nytimesPlaceholder, output);
 
             clearTimeout(placeObj.nytimesRequestTimeout);  // Found data, so we can clear timeout
         }).fail(function(e, textstatus, error){
             output = "There is an error retrieving NY Times articles: " + textstatus + ", " + error;
-            infowin.setContent(infowin.getContent().replace(nytimesPlaceholder, output));
+            placeObj.infowin = placeObj.infowin.replace(nytimesPlaceholder, output);
             clearTimeout(placeObj.nytimesRequestTimeout);
         });
       }

@@ -21,3 +21,4 @@
 
       var map;  // Stores our Google Map
       var markers = []; // Stores our markers in use on the map
+      var infowin; // Stores our infowindow
