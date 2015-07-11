@@ -5,11 +5,11 @@
     <link rel="stylesheet" href="css/lib/bootstrap.min.css">
 
     <style type="text/css">
-      html, body { height: 100%; width: 100%; margin: 0; xxpadding-right: 20px; }
+      html, body { height: 100%; width: 100%; margin: 0; }
       #container { width: 100%; }
-      .map-canvas-container { height: 500px; widthxx: 85%; padding: 0; backgroundxx: yellow;}
-      #map-canvas { height: 90%; width:100%; marginxx: 20px 0 0 100px; } /* mobile: width: 100%, others: width: 85%*/
-      #map-search { positionxx:absolute; widthxx:100%; top:0; left:0; z-indexxx:+2; heightxx:1.5em; background: #A0A0A0;}
+      .map-canvas-container { height: 500px; padding: 0; }
+      #map-canvas { height: 90%; width:100%; }
+      #map-search { top:0; left:0; background: #A0A0A0;}
       #map-input {
         background-color: #fff;
         font-family: Roboto;
@@ -18,14 +18,10 @@
         margin-left: 12px;
         padding: 0 11px 0 13px;
         text-overflow: ellipsis;
-        xxwidth: 400px;
         width: 85%;
       }
       #list-view {
         background: #909090;
-        max-widthxx: 100px;
-        widthxx: 100%;
-        min-widthxx: 150px;
         float: left;
         padding-top: 10px;
         padding-left: 0px;
@@ -49,8 +45,6 @@
       }
 
       .nytimesajax, .wikiajax {
-        widthxx: 25%;
-        backgroundxx: #A0A000;
         border-radius: 5px;
         border: 1px solid #A0A0A0;
         padding: 5px;
@@ -60,7 +54,7 @@
   </head>
   <body>
 
-    <div class="container"><!--Container-->
+    <div class="container">
 
       <div id="map-search" class="row">
         <div class="col-md-12">
@@ -90,152 +84,74 @@
     <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBZnrZl2ZiBy4Vn6_A_dcSohGg9j6nMGBE"></script>
     <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=places"></script>
     <script type="text/javascript">
+
     //----------------- Model ------------//
-      var mainPlace = {          lat: 22.283, lng: 114.17, zoom: 12, name: "Hong Kong"      };
-      //var place = {          lat: 51.5, lng: 0, zoom: 8, name: "London"      };
-      //var place = {          lat: -34.397, lng: 150.644, name: "Sydney"      };
 
-      /*
-      var otherPlaces0 = [
-                            { lat: 22.275, lng: 114.147, name: "Victoria's Peak"},
-                            { lat: 22.293, lng: 114.161, name: "Victoria Harbour"},
-                            { lat: 22.311, lng: 114.042, name: "Hong Kong Disneyland"},
-                            { lat: 22.308, lng: 113.922, name: "Hong Kong International Airport"},
-                            { lat: 22.286, lng: 114.160, name: "International Finance Center"}
-                        ];
-                        */
+      // mainPlace is the initial location of the map
+      var mainPlace = { lat: 22.283, lng: 114.17, zoom: 12, name: "Hong Kong" };
 
+      // otherPlaces contains other locations in and around the initial location. We will set markers to these places
       var otherPlaces = [
                           { name: "Victoria's Peak", lat: 22.275, lng: 114.147, term: "Victoria's Peak Hong Kong" },
-                          { name: "Hong Kong Disneyland", lat: 22.311, lng: 114.042 },
-                          { name: "McDonald's", lat: 22.281, lng: 114.177, term: "Hong Kong McDonald's" },
-                          { name: "KFC", lat: 22.280, lng: 114.178, term: "Hong Kong KFC" },
+                          { name: "Hong Kong Disneyland", lat: 22.311, lng: 114.042, term: "Disneyland" },
+                          { name: "McDonald's", lat: 22.281, lng: 114.177, term: "McDonald's Restaurant" },
+                          { name: "KFC", lat: 22.280, lng: 114.178, term: "Kentucky Fried Chicken" },
                           { name: "Hong Kong International Airport", lat: 22.308, lng: 113.922 },
                           { name: "International Finance Center", lat: 22.286, lng: 114.160, term: "International Finance Center Hong Kong" }
                         ];
 
+      // API urls and placeholder text in info-windows
+      var wikiUrl = 'http://en.wikipedia.org/w/api.php?action=opensearch&search=SEARCHTERM&format=json&callback=wikiCallback';
+      var wikiPlaceholder = 'Retrieving Wikipedia links...';
 
-      var wikiUrl = 'http://en.xxwikipedia.org/w/api.php?action=opensearch&search=SEARCHTERM&format=json&callback=wikiCallback';
-      var nytimesUrl = 'http://api.xxnytimes.com/svc/search/v2/articlesearch.json?q=SEARCHTERM&sort=newest&api-key=5523c9884485f5cd674bde70c977397a:10:72302772';
+      var nytimesUrl = 'http://api.nytimes.com/svc/search/v2/articlesearch.json?q=SEARCHTERM&sort=newest&api-key=5523c9884485f5cd674bde70c977397a:10:72302772';
+      var nytimesPlaceholder = 'Retrieving NY Times articles...';
+
 
     //----------------- View Model ------------//
 
-      var map;
-      var markers = [];
-      var infowindow = new google.maps.InfoWindow();
+      var map;  // Stores our Google Map
+      var markers = []; // Stores our markers in use on the map
 
       var vm = function() {
         var self = this;
 
-        this.mapInput = ko.observable(); //mainPlace.name
-        this.keyLocArray = ko.observableArray(otherPlaces);
-        //this.markers = ko.observableArray([]);
+        this.mapInput = ko.observable(); // Binds to input text field
+        this.keyLocArray = ko.observableArray(otherPlaces); // Binds to array containing Key Locations (Other Places)
 
-        var marker;
-        var content;
+        var marker; // Each marker object: Google Map Marker and InfoWindow data
         for (var i = 0; i < otherPlaces.length; i++) {
-          //console.log("getMarker i is "+i+", markers.length is "+markers.length);
-          //addMarker(getGMLatLng(this.keyLocArray[i]), this.keyLocArray()[i].name);
-          markers[i] = null;
-          marker = getMarker(getGMLatLng(this.keyLocArray()[i]), this.keyLocArray()[i].name);
+          marker = getMarker(this.keyLocArray()[i]);
           markers[i] = marker;
           this.keyLocArray()[i].j = i;
           this.keyLocArray()[i].visible = ko.observable(true);
-          this.keyLocArray()[i].marker = ko.observable( marker );
-          //this.keyLocArray()[i].marker( marker );
-         // htmlKeyLocations += '<li>' + otherPlaces[i].name + '</li>';
-          //console.log("i="+i+this.keyLocArray()[i].marker());
-            google.maps.event.addListener(marker, 'click', function(e) {
-              //content = "hey " + e.position;
-              //infowindow.setContent(content);
-              //infowindow.setPosition(e.position);
-              //infowindow.open(map,marker);
-            });
+          this.keyLocArray()[i].marker = ko.observable(marker);
         }
-        /**
-        this.setMap = function() {
-          //map.set-map(this.map-input())
-          if (this.mapInput()) {
-            console.log("setMap to "+this.mapInput());
-          }
+
+        // Calls when user click on a key location in list-view, and moves map to place
+        this.moveToLoc = function(placeObj) {
+          clickedOnMarker(placeObj);  // Moves map to center of place
         };
 
-        this.moveToLoc2 = function() {
-          //move map to center on clicked key loc
-          var self = this;
-          console.log("in moveToLoc2 "+this.keyLocArray.length+","+JSON.stringify(this, null, 4) ); //+", "+this.keyLocArray()[1].name);
-          for (var i=0; i<markers.length; i++) {
-            if (this.keyLocArray()[i].visible() == false) {
-              markers[i].marker.setMap(null);
-            }
-            markers[i].marker.setAnimation(null);
-          }
-        };
-        **/
-
-        this.moveToLoc = function(c) {
-          //move map to center on clicked key loc
-
-          //console.log("center map to key loc "+c.name+", "+keyLocArray()[i]);
-          //this.mapInput( c.name );
-          console.log("in moveToLoc1 "+self.keyLocArray()[1].visible() );
-
-          // Put below in function to share with marker listener
-          clickedOnMarker(c, self);
-          /**
-          map.setCenter(new google.maps.LatLng(c.lat, c.lng));
-          for (var i=0; i<markers.length; i++) {
-            markers[i].marker.setMap(null);
-            console.log("i is "+i+", markers length is "+markers.length);
-            if (self.keyLocArray()[i].visible() == true) {
-              //console.log("marker true on "+this.keyLocArray()[i].name);
-              markers[i].marker.setMap(map);
-            }
-            else {
-              //console.log("marker false on "+this.keyLocArray()[i].name);
-
-            }
-            markers[i].marker.setAnimation(null);
-          }
-          //markers[c.j].setMap(map);
-          markers[c.j].marker.setAnimation(google.maps.Animation.BOUNCE);
-          markers[c.j].infowindow.open(markers[c.j].marker.get('map'), markers[c.j].marker);
-          **/
-          // End of Put below...
-
-          //console.log("marker bouncy, val of infowindow property: "+ markers[c.j].infowindow);
-        };
-
+        // Calls when user enters text in input field. Will then filter Key Locations list and reset markers
         this.filterLocs = function() {
-          //var self = this;
-          // Go thru OtherPlaces array, see if c.value string is in OtherPlaces array
-          //console.log("in filterLocs: value is: "+self.mapInput()+"");
-
+          var i;
 
           // Remove initial markers on map
           if (markers.length > 0) {
-            console.log("in filterLocs, markers.length is "+markers.length);
-            for (var i = 0; i < markers.length; i++) {
+            for (i = 0; i < markers.length; i++) {
               markers[i].marker.setMap(null);
             }
-            //markers.length = 0;
           }
 
-
-          for (var i=0; i<this.keyLocArray().length; i++) {
-            //this.keyLocArray()[i].marker().setMap(null);
-            if (this.keyLocArray()[i].name.toUpperCase().indexOf(self.mapInput().toUpperCase())>=0) {
-              //console.log("yes1 "+this.keyLocArray()[i].name+","+this.keyLocArray()[i].visible()+"...");
-              this.keyLocArray()[i].visible(true);
-              //this.keyLocArray()[i].marker().setMap(map);
-              markers[i].marker.setMap(map);
-              //console.log("yes2 "+this.keyLocArray()[i].name+","+this.keyLocArray()[i].visible());
+          // If each list item has a matching substring from input (case insensitive), make it visible. Otherwise hide it.
+          for (i = 0; i < this.keyLocArray().length; i++) {
+            if (this.keyLocArray()[i].name.toUpperCase().indexOf(self.mapInput().toUpperCase()) >= 0) {
+              this.keyLocArray()[i].visible(true); // Allow key location to appear
+              markers[i].marker.setMap(map); // Allow marker to appear on map
             }
             else {
-              //console.log("no1 "+this.keyLocArray()[i].name+","+this.keyLocArray()[i].visible()+"...");
-              this.keyLocArray()[i].visible(false);
-
-              //console.log("no2 "+this.keyLocArray()[i].name+","+this.keyLocArray()[i].visible());
+              this.keyLocArray()[i].visible(false); // Otherwise hide the key location
             }
           }
         };
@@ -246,62 +162,37 @@
       ko.applyBindings(new vm());
 
 
+      // Initialize once Google map has finish loading
       function initialize() {
+
+        // Define map options, based on mainPlace object
         var mapOptions = {
           center: mainPlace,
           zoom: mainPlace.zoom
         };
-        console.log(document.getElementById('map-canvas'));
 
-        map = new google.maps.Map(document.getElementById('map-canvas'),
-            mapOptions);
+        // Create our map
+        map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
 
-        //var initMarkers = function() {
-        //  for (var i=0; i<this.keyLocArray().length; i++) {
-        //      this.keyLocArray()[i].marker().setMap(map);
-        //  }
-        //};
-        //console.log( vm().mapInput() ); // Initialize markers on map upon loading
-        //console.log( vm.getData() );
-
-        var input = /** @type {HTMLInputElement} */(
-          document.getElementById('map-input'));
-
-          //var autocomplete = new google.maps.places.Autocomplete(input);
-          //  autocomplete.bindTo('bounds', map);
-
-
-        var htmlKeyLocations = "";
-        // addMarker(mainPlace, mainPlace.name); // No marker for default place
-
-        //console.log("in before end of init, markers.length is "+markers.length);
-
-        // Initial markers on map
+        // Add initial markers on map
         for (var i = 0; i < otherPlaces.length; i++) {
-          //console.log("i="+i);
-          addMarker(getGMLatLng(otherPlaces[i]), otherPlaces[i].name, i);
-          //htmlKeyLocations += '<li>' + otherPlaces[i].name + '</li>';
-          //addListenerToMarker(markers[i]);
+          addMarker(otherPlaces[i], i);
         }
-
-
-        /***
-        var keyloc = document.getElementById("list-view-ul");
-        keyloc.innerHTML = htmlKeyLocations;
-        ***/
-        //console.log("in end of init, markers.length is "+markers.length);
-
       }
       google.maps.event.addDomListener(window, 'load', initialize);
 
 
-
+      // Returns google map LatLng object from a place's latitude and longitude
       function getGMLatLng(placeObj) {
         return new google.maps.LatLng(placeObj.lat, placeObj.lng);
       }
 
-      // Add a marker to the map and push to the array.
-      function getMarker(location, name) {
+
+      // Returns marker object from a place object
+      function getMarker(placeObj) {
+        var location = getGMLatLng(placeObj);
+        var name = placeObj.name;
+
         var marker = new google.maps.Marker({
           position: location,
           title: name
@@ -310,166 +201,146 @@
         return marker;
       }
 
-      function addMarker(location, name, i) {
+
+      // Adds initial marker and infowindow to the map
+      function addMarker(placeObj, i) {
+        var location = getGMLatLng(placeObj);
+        var name = placeObj.name;
+
+        // Create marker object
         var marker = new google.maps.Marker({
           position: location,
           map: map,
           title: name
         });
-        //markers.push(marker); // *** change marker to obj for infowindow
 
-        //var welem = document.createElement("div");
-        //welem.setAttribute("id", "wikipedia-links"+i);
-        //welem.appendChild(document.createTextNode("Loading Wikipedia Links..."));
+        // Create basic infowindow for this marker
         var infowin = new google.maps.InfoWindow({
-        //infowin = new google.maps.InfoWindow({
-          content: '<b>' + otherPlaces[i].name + '</b>',
+          content: '<b>' + otherPlaces[i].name + '</b>' + '<br><div class="wikiajax">' + wikiPlaceholder + '</div><br><div class="nytimesajax">' + nytimesPlaceholder + '</div>',
           maxWidth: 300
         });
 
-        //otherPlaces[i].wikiElem = $("#wikipedia-links"+i);
-
-        //console.log("check jquery dom:" + $("#wikipedia-linksx0") );
-
-        // Retrieve Wikipedia Info for InfoWindow
+        // Set time limit to get info from Wiki API
         otherPlaces[i].wikiRequestTimeout = setTimeout(function(){
-            //otherPlaces[i].$wikiElem.text("failed to get Wikipedia resources for "+otherPlaces[i].name);
-            infowin.setContent(infowin.getContent() + '<br><div class="wikiajax">Failed to get Wikipedia resources for '+otherPlaces[i].name+'</div>');
+          infowin.setContent(
+            infowin.getContent().replace(
+              wikiPlaceholder, 'Sorry, could not get Wikipedia resources for '+otherPlaces[i].name
+            )
+          );
         }, 8000);
 
+        // Set time limit to get info from NY Times API
+        otherPlaces[i].nytimesRequestTimeout = setTimeout(function(){
+          infowin.setContent(
+            infowin.getContent().replace(
+              nytimesPlaceholder, 'Sorry, could not get NY Times articles for '+otherPlaces[i].name
+            )
+          );
+        }, 8000);
+
+        // Validate search term. If place object has no term property, use the name
         if (!otherPlaces[i].term) {
           otherPlaces[i].term = otherPlaces[i].name;
         }
-        console.log("search term is: "+ otherPlaces[i].term);
+
+        // Retrieve Wikipedia Info for InfoWindow
         var wikiLoc = wikiUrl;
         wikiLoc = wikiLoc.replace("SEARCHTERM", otherPlaces[i].term);
-        addWikiInfo(wikiLoc, otherPlaces[i].wikiRequestTimeout, infowin);
+        addWikiInfo(wikiLoc, otherPlaces[i], infowin);
 
         // Retrieve NY Times Info for InfoWindow
         var nytimesLoc = nytimesUrl;
         nytimesLoc = nytimesLoc.replace("SEARCHTERM", otherPlaces[i].term);
         addNYTimesInfo(nytimesLoc, otherPlaces[i], infowin);
 
-
         // Associate infowindows with markers
         markers[i] = { marker: marker, infowindow: infowin };
 
+        // Enable click event to marker
         google.maps.event.addListener(markers[i].marker, 'click', function() {
-          // dupe? infowin.open(markers[i].marker.get('map'), markers[i].marker);
-          //*** to center map also
-          //map.setCenter(new google.maps.LatLng(otherPlaces[i].lat, otherPlaces[i].lng));
           clickedOnMarker(otherPlaces[i]);
-          //console.log("what is this:" + showObj( ) );
         });
       }
 
-      /**
-      function createMarker(placeObj){
-        console.log("Create marker for "+placeObj);
-      };
-      **/
 
-      // Debug function to return contents of an object as JSON data
-      function showObj(obj) {
-        return JSON.stringify(obj, null, 4)
-      }
+      // Calls when user clicks on marker in the map. Stop all marker animation, then animate the one clicked marker. Then open its infowindow.
+      function clickedOnMarker(placeObj) {
+        map.setCenter(getGMLatLng(placeObj));
 
-      function clickedOnMarker(c) {
-          // Put below in function to share with marker listener
-
-          map.setCenter(new google.maps.LatLng(c.lat, c.lng));
-          for (var i=0; i<markers.length; i++) {
-            markers[i].marker.setMap(null);
-            //console.log("i is "+i+", markers length is "+markers.length);
-            //console.log("in clickedOnMarker, i:"+i+", otherPlaces.visible: "+otherPlaces[i].visible());
-            if (otherPlaces[i].visible() == true) {
-              //console.log("marker true on "+this.keyLocArray()[i].name);
-              markers[i].marker.setMap(map);
-            }
-            else {
-              //console.log("marker false on "+this.keyLocArray()[i].name);
-
-            }
-            markers[i].marker.setAnimation(null);
+        for (var i = 0; i < markers.length; i++) {
+          markers[i].marker.setMap(null);
+          if (otherPlaces[i].visible() === true) {
+            markers[i].marker.setMap(map);
           }
-          //markers[c.j].setMap(map);
-          markers[c.j].marker.setAnimation(google.maps.Animation.BOUNCE);
-          markers[c.j].infowindow.open(markers[c.j].marker.get('map'), markers[c.j].marker);
-          // End of Put below...
-
+          markers[i].marker.setAnimation(null);
+        }
+        markers[placeObj.j].marker.setAnimation(google.maps.Animation.BOUNCE);
+        markers[placeObj.j].infowindow.open(markers[placeObj.j].marker.get('map'), markers[placeObj.j].marker);
       }
 
-      function addWikiInfo(wikiUrl, wikiRequestTimeout, infowin) {
+      // Wiki Ajax function. Runs ajax query, and populate infowindow when there is new data
+      function addWikiInfo(wikiUrl, placeObj, infowin) {
         var output = "";
-        //console.log("elem is "+showObj(elem));
-        //infowin.setContent("hey");
+
         $.ajax({
             url: wikiUrl,
             dataType: "jsonp",
-            // jsonp: "callback",
             success: function( response ) {
-                var articleList = response[1];
+              var articleList = response[1];
 
-                //elem.text("");
-                for (var i = 0; i < articleList.length; i++) {
-                    articleStr = articleList[i];
-                    var url = 'http://en.wikipedia.org/wiki/' + articleStr;
-                    //$wikiElem.append('<li><a href="' + url + '">' + articleStr + '</a></li>');
-                    output += '<li><a href="' + url + '" target="info">' + articleStr + '</a></li>';
-                    //elem.append('<li><a href="' + url + '">' + articleStr + '</a></li>');
-                };
-                clearTimeout(wikiRequestTimeout);
-                if (!output) {
-                  output = "<br>(No Wikipedia articles found)";
-                }
-                else {
-                  output = "<br>Wikipedia Links:<br>" + output;
-                }
-                infowin.setContent(infowin.getContent() + '<div class="wikiajax">' + output + '</div>');
-                //placeObj.wiki = output;
-                //console.log("ajax output is "+output);
+              for (var i = 0; i < articleList.length; i++) {
+                articleStr = articleList[i];
+                var url = 'http://en.wikipedia.org/wiki/' + articleStr;
+                output += '<li><a href="' + url + '" target="info">' + articleStr + '</a></li>';
+              }
+              clearTimeout(placeObj.wikiRequestTimeout);  // Found data, so we can clear timeout
+              if (!output) {
+                output = "(No Wikipedia articles found)";
+              }
+              else {
+                output = "Wikipedia Links:<br>" + output;
+              }
+              infowin.setContent(infowin.getContent().replace(wikiPlaceholder, output)); // Replace placeholder with Wiki results
+            },
+            error: function( response, textstatus, errorthrown ) {
+              output = "There is an error retrieving Wiki: " + textstatus + ".";
+              infowin.setContent(infowin.getContent().replace(wikiPlaceholder, output)); // Replace placeholder with Wiki results
             }
         });
 
       }
 
-//        addNYTimesInfo(nytimesLoc, otherPlaces[i], infowin);
+
+      // NYTimes Ajax function. Runs json query, and populate infowindow when there is new data
       function addNYTimesInfo(nytimesLoc, placeObj, infowin) {
         var output = "";
 
         $.getJSON(nytimesLoc, function(data){
-
-            //$nytHeaderElem.text('New York Times Articles About ' + cityStr);
-
             articles = data.response.docs;
-
             for (var i = 0; i < articles.length; i++) {
-                var article = articles[i];
-                //$nytElem.append
-                output += '<li class="article">'+
-                    '<a href="'+article.web_url+'" target="info">'+article.headline.main+'</a>'+
-                    '<p>' + article.snippet + '</p>'+
-                '</li>';
-            };
+              var article = articles[i];
+              output += '<li class="article">'+
+                  '<a href="'+article.web_url+'" target="info">'+article.headline.main+'</a>'+
+                  '<p>' + article.snippet + '</p>'+
+              '</li>';
+            }
             if (!output) {
-              output = "<br>(No NY Times articles found)";
+              output = "(No NY Times articles found)";
             }
             else {
-              output = "<br>NY Times Related Articles:<br>" + output;
+              output = "NY Times Related Articles:<br>" + output;
             }
-            infowin.setContent(infowin.getContent() + '<div class="nytimesajax">' + output + '</div>');
-            //placeObj.nytimes = output;
+            infowin.setContent(infowin.getContent().replace(nytimesPlaceholder, output));
 
-        }).error(function(e){
-            //$nytHeaderElem.text
-            output += 'New York Times Articles Could Not Be Loaded';
-            infowin.setContent(infowin.getContent() + '<div class="nytimesajax">' + output + '</div>');
-            //placeObj.nytimes = output;
+            clearTimeout(placeObj.nytimesRequestTimeout);  // Found data, so we can clear timeout
+        }).fail(function(e, textstatus, error){
+            output = "There is an error retrieving NY Times articles: " + textstatus + ", " + error;
+            infowin.setContent(infowin.getContent().replace(nytimesPlaceholder, output));
+            clearTimeout(placeObj.nytimesRequestTimeout);
         });
       }
-    //----------------- View ------------//
 
-    //console.log("Timestamp: "+Date.now());
+
     </script>
 
   </body>
