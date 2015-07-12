@@ -1,3 +1,4 @@
+      "use strict";
 
       var vm = function() {
         var self = this;
@@ -50,6 +51,14 @@
 
       // Initialize once Google map has finish loading
       function initialize() {
+
+        // Offline detection on index.html every 5 seconds. Shows a message to user if offline
+        Offline.options = {checks: {xhr: {url: 'index.html'}}};
+        var run = function(){
+          if (Offline.state === 'up')
+            Offline.check();
+          }
+        setInterval(run, 5000);
 
         // Define map options, based on mainPlace object
         var mapOptions = {
@@ -154,7 +163,7 @@
           markers[i].marker.setAnimation(null);
         }
         markers[placeObj.j].marker.setAnimation(google.maps.Animation.BOUNCE);
-        infowin.setContent("some stuff here for "+placeObj.infowin);
+        infowin.setContent(placeObj.infowin);
         infowin.open(map, markers[placeObj.j].marker);
       }
 
@@ -167,6 +176,7 @@
             dataType: "jsonp",
             success: function( response ) {
               var articleList = response[1];
+              var articleStr;
 
               for (var i = 0; i < articleList.length; i++) {
                 articleStr = articleList[i];
@@ -196,7 +206,7 @@
         var output = "";
 
         $.getJSON(nytimesLoc, function(data){
-            articles = data.response.docs;
+            var articles = data.response.docs;
             for (var i = 0; i < articles.length; i++) {
               var article = articles[i];
               output += '<li class="article">'+
