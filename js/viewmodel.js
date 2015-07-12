@@ -3,25 +3,25 @@
       var vm = function() {
         var self = this;
 
-        this.mapInput = ko.observable(); // Binds to input text field
-        this.keyLocArray = ko.observableArray(otherPlaces); // Binds to array containing Key Locations (Other Places)
+        self.mapInput = ko.observable(); // Binds to input text field
+        self.keyLocArray = ko.observableArray(otherPlaces); // Binds to array containing Key Locations (Other Places)
 
         var marker; // Each marker object: Google Map Marker and InfoWindow data
-        for (var i = 0; i < otherPlaces.length; i++) {
-          marker = getMarker(this.keyLocArray()[i]);
+        for (var i = 0; i < numOfPlaces; i++) {
+          marker = getMarker(self.keyLocArray()[i]);
           markers[i] = marker;
-          this.keyLocArray()[i].j = i;
-          this.keyLocArray()[i].visible = ko.observable(true);
-          this.keyLocArray()[i].marker = ko.observable(marker);
+          self.keyLocArray()[i].j = i;
+          self.keyLocArray()[i].visible = ko.observable(true);
+          self.keyLocArray()[i].marker = ko.observable(marker);
         }
 
         // Calls when user click on a key location in list-view, and moves map to place
-        this.moveToLoc = function(placeObj) {
+        self.moveToLoc = function(placeObj) {
           clickedOnMarker(placeObj);  // Moves map to center of place
         };
 
         // Calls when user enters text in input field. Will then filter Key Locations list and reset markers
-        this.filterLocs = function() {
+        self.filterLocs = function() {
           var i;
 
           // Remove initial markers on map
@@ -32,17 +32,16 @@
           }
 
           // If each list item has a matching substring from input (case insensitive), make it visible. Otherwise hide it.
-          for (i = 0; i < this.keyLocArray().length; i++) {
-            if (this.keyLocArray()[i].name.toUpperCase().indexOf(self.mapInput().toUpperCase()) >= 0) {
-              this.keyLocArray()[i].visible(true); // Allow key location to appear
+          for (i = 0; i < numOfPlaces; i++) {
+            if (self.keyLocArray()[i].name.toUpperCase().indexOf(self.mapInput().toUpperCase()) >= 0) {
+              self.keyLocArray()[i].visible(true); // Allow key location to appear
               markers[i].marker.setMap(map); // Allow marker to appear on map
             }
             else {
-              this.keyLocArray()[i].visible(false); // Otherwise hide the key location
+              self.keyLocArray()[i].visible(false); // Otherwise hide the key location
             }
           }
         };
-
 
       };
 
@@ -70,12 +69,13 @@
         map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
 
         // Add initial markers on map
-        for (var i = 0; i < otherPlaces.length; i++) {
+        for (var i = 0; i < numOfPlaces; i++) {
           addMarker(otherPlaces[i], i);
         }
 
         // Initialize our infoWindow
         infowin = new google.maps.InfoWindow();
+
       }
       google.maps.event.addDomListener(window, 'load', initialize);
 
@@ -134,12 +134,12 @@
         // Retrieve Wikipedia Info for InfoWindow
         var wikiLoc = wikiUrl;
         wikiLoc = wikiLoc.replace("SEARCHTERM", otherPlaces[i].term);
-        addWikiInfo(wikiLoc, otherPlaces[i], infowin);
+        addWikiInfo(wikiLoc, otherPlaces[i]);
 
         // Retrieve NY Times Info for InfoWindow
         var nytimesLoc = nytimesUrl;
         nytimesLoc = nytimesLoc.replace("SEARCHTERM", otherPlaces[i].term);
-        addNYTimesInfo(nytimesLoc, otherPlaces[i], infowin);
+        addNYTimesInfo(nytimesLoc, otherPlaces[i]);
 
         // Add marker to markers array. Allows for optional revisions to markers object array
         markers[i] = { marker: marker };
@@ -168,7 +168,7 @@
       }
 
       // Wiki Ajax function. Runs ajax query, and populate infowindow when there is new data
-      function addWikiInfo(wikiUrl, placeObj, infowin) {
+      function addWikiInfo(wikiUrl, placeObj) {
         var output = "";
 
         $.ajax({
@@ -202,7 +202,7 @@
 
 
       // NYTimes Ajax function. Runs json query, and populate infowindow when there is new data
-      function addNYTimesInfo(nytimesLoc, placeObj, infowin) {
+      function addNYTimesInfo(nytimesLoc, placeObj) {
         var output = "";
 
         $.getJSON(nytimesLoc, function(data){

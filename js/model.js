@@ -22,3 +22,5 @@
       var map;  // Stores our Google Map
       var markers = []; // Stores our markers in use on the map
       var infowin; // Stores our infowindow
+
+      var numOfPlaces = otherPlaces.length; // Stores number of places in our otherPlaces object array
